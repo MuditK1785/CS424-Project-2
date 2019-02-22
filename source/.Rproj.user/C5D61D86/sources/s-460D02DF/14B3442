@@ -1,0 +1,22 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1550700579006.000,
+    "dirty" : true,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "14B3442",
+    "lastKnownWriteTime" : 1550725640,
+    "last_content_update" : 1550757966717,
+    "path" : "~/UicFiles/CS 424/Project2/proj2src/app.R",
+    "project_path" : "app.R",
+    "properties" : {
+        "cursorPosition" : "25,0",
+        "scrollLine" : "19"
+    },
+    "relative_order" : 1,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

@@ -1,0 +1,69 @@
+# Author : Rami Masoud, Jeet Roal, Mudit Kumar, Jonathan Munoz
+# Class  : UIC CS 424, Spring 2019
+# Project: #2 Every Breath You Take
+# About  : A web-based application that visualizes data in multiple ways using R, Shiny, ggplot2, & Shiny Dashboard.
+#
+# This is a Shiny web application. You can run the application by clicking the 'Run App' button above.
+# Find out more about building applications with Shiny here: http://shiny.rstudio.com/
+#
+
+# Importing Libraries
+library(DT)
+library(ggplot2)
+library(shiny)
+library(shinydashboard)
+library(dplyr)
+library(readr)
+library(feather)
+
+
+# Gather names of all the files in the directory that contain "daily".
+dailyFiles = list.files(pattern = "^daily.*")
+
+# Combine all the files into one data frame.
+dailyData = do.call(rbind, lapply(dailyFiles, function(x) read_csv(x, col_names = TRUE)))
+
+# Gather names of all the files in the directory that contain "daily".
+hourlyFiles = list.files(pattern = "^hourly.*")
+
+# Combine all the files into one data frame.
+hourlyData = do.call(rbind, lapply(hourlyFiles, function(x) read_csv(x, col_names = TRUE)))
+
+
+
+
+
+
+# Define UI for application that draws a histogram
+ui <- fluidPage(
+   
+   # Application title
+   titlePanel("proj2"),
+   
+   # Sidebar with a slider input for number of bins 
+   sidebarLayout(
+      sidebarPanel(
+         sliderInput("bins",
+                     "Number of bins:",
+                     min = 1,
+                     max = 50,
+                     value = 30)
+      ),
+      
+      # Show a plot of the generated distribution
+      mainPanel(
+         plotOutput("distPlot")
+      )
+   )
+)
+
+# Define server logic required to draw a histogram
+server <- function(input, output) {
+   
+   output$distPlot <- renderPlot({
+   })
+}
+
+# Run the application 
+shinyApp(ui = ui, server = server)
+
