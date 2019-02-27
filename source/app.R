@@ -17,12 +17,16 @@ library(dplyr)
 library(readr)
 library(fst)
 library(geojson)
-library(geojsonio)
+# library(geojsonio)
 library(leaflet)
-
 # Read in the 2 pre-processed feather files
 dailyData  <- read_fst('dailyData.fst')
-hourlyData <- read_fst('hourlyData.fst')
+# hourlyData <- read_fst('hourlyData.fst')
+
+#select state and county columns
+counties <- dailyData[c(1,2)]
+
+Date <- dailyData[c(5)]
 
 # Combine the Counties and States to create another column.
 counties$CountyXState <- paste(counties$`county Name`, counties$`State Name`, sep=', ')
@@ -30,6 +34,11 @@ counties$CountyXState <- paste(counties$`county Name`, counties$`State Name`, se
 # Read in the location data for the map using the aqs_sites.csv
 sites <- read.table(file = "aqs_sites.csv", sep=",",header = TRUE)
 
+# Create the menu items to select the different years
+years<-c(1990:2018)
+
+county_states <- c("Cook, Illinois", "Hawaii, Hawaii","New York, New York","Los Angeles, California","King, Washington", "Harris, Texas", 
+                   "Miami-Dade, Florida", "San Juan, New Mexico","Hennepin, Minnesota", "Wake, North Carolina", "Elko, Nevada","Ottawa, Ohio")
 
 
 # Define UI for application
@@ -37,6 +46,11 @@ ui <- fluidPage(
    
    # Application title
    titlePanel("proj2"),
+   
+   dashboardSidebar(
+     selectInput("Year", "Select the year to visualize", years, selected = 2018),
+     selectInput("County", "Select the county to visualize", county_states, selected = "Cook, Illinois")
+   ),
    
    # Sidebar with a slider input for number of bins 
    sidebarLayout(
@@ -53,6 +67,9 @@ ui <- fluidPage(
 
 # Define server logic required to draw a histogram
 server <- function(input, output) {
+  
+  # calculate the values one time and re-use them in multiple charts to speed things up
+  justOneYearReactive <- reactive({subset(dailyData, year(dailyData$Date) == input$Year)})
    
 }
 
