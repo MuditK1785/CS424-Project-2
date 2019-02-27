@@ -16,11 +16,21 @@ library(shinydashboard)
 library(dplyr)
 library(readr)
 library(fst)
+library(geojson)
+library(geojsonio)
 library(leaflet)
 
 # Read in the 2 pre-processed feather files
 dailyData  <- read_fst('dailyData.fst')
 hourlyData <- read_fst('hourlyData.fst')
+
+# Combine the Counties and States to create another column.
+counties$CountyXState <- paste(counties$`county Name`, counties$`State Name`, sep=', ')
+
+# Read in the location data for the map using the aqs_sites.csv
+sites <- read.table(file = "aqs_sites.csv", sep=",",header = TRUE)
+
+
 
 # Define UI for application
 ui <- fluidPage(
