@@ -1,5 +1,5 @@
 ######################################################################################################################################
-# Authors: Rami Masoud, Jeet Roal, Mudit Kumar, Jonathan Munoz                                                                       #
+# Authors: Rami Masoud, Jeet Raol, Mudit Kumar, Jonathan Munoz                                                                       #
 # Class  : UIC CS 424, Spring 2019                                                                                                   #
 # Project: #2 Every Breath You Take                                                                                                  #
 # About  : A web-based application that visualizes data in multiple ways using R, Shiny, ggplot2, & Shiny Dashboard.                 #
@@ -38,6 +38,9 @@ listOfCounties <- dailyData[c(1,2)]
 # Remove the duplicate rows in the listOfCounties dataframe
 listOfCounties <- listOfCounties %>% distinct
 
+# Dropdown items for map - Part C
+aqiPollutantList <- c("AQI", "Ozone", "SO2", "CO", "NO2", "PM2.5", "PM10")
+
 # Read in the location data for the map using the aqs_sites.csv
 sites <- read.table(file = "aqs_sites.csv", sep=",",header = TRUE)
 
@@ -74,18 +77,29 @@ ui <- dashboardPage(
     
     
     # Here we can add side bar widgets
-    sidebarMenu(
+    sidebarMenu(id = "sidebarmenu",
       
       # Set tab side menu pages
-      menuItem("Dashboard", tabName= "dashboard"), # Dashboard displays all county data, charts, and graphs
+      menuItem("Part C 1st Bullet Point", tabName = "P1"), # Dashboard displays all county data, charts, and graphs
+      menuItem("Part C 3rd Bullet Point", tabName = "3BP"), # Choose year and county then be able to see daily AQI line chart, bar chart, and table
+      menuItem("Part C 4th Bullet Point", tabName = "map"), # Displays the map for top 100 counties of AQI or a pollutant type
       menuItem("About", tabName = "about"), # Find more about this project.
       
+      conditionalPanel("input.sidebarmenu === 'P1' || input.sidebarmenu === '3BP'",
+                       selectizeInput("State", "Select State", choices = unique(listOfCounties$State), selected = "Illinois"),
+                       selectizeInput("County", "Select County", choices = unique(listOfCounties$County), selected = "Cook"),
+                       
+                       # Set up the year select input
+                       selectizeInput("Year", "Select the Year to See Data For", choices = unique(listOfYears$Year), selected = "2018")
+      ),
+      conditionalPanel("input.sidebarmenu === 'map'",
+                       # Set up the year select input
+                       selectizeInput("mapYear", "Select the Year to See Data For", choices = unique(listOfYears$Year), selected = "2018"),
+                       selectizeInput("Type", "Pick how you want to categorize the map (AQI or a Pollutant)", choices = unique((aqiPollutantList)), selected = "AQI")
+                       
+      )
       # Set up 2 way search, By State -> County, By Alphabetical List or Type To Search
-      selectizeInput("State", "Select State", choices = unique(listOfCounties$State), selected = "Illinois") ,
-      selectizeInput("County", "Select County", choices = unique(listOfCounties$County), selected = "Cook"),
       
-      # Set up the year select input
-      selectizeInput("Year", "Pick a Year for the 'C' Range Visuals", choices = unique(listOfYears$Year), selected = "2018")
     )
   ),
   
@@ -93,7 +107,7 @@ ui <- dashboardPage(
   dashboardBody(
     
     tabItems(
-      tabItem("dashboard",
+      tabItem("P1",
               fluidRow(
                 box( title = "Air Quality Pie", solidHeader = TRUE, status = "primary", width = 6, plotOutput("pieChartAQI")),
                 
@@ -125,6 +139,11 @@ ui <- dashboardPage(
                 #box(title = "AQI Category from 1980-2018", solidHeader = TRUE, status = "primary", width = NULL, plotOutput("line1"))
               )
       ),
+      tabItem("3BP",
+              fluidRow(
+                box( title = "Daily AQI Data Line Chart with Leading Pollutant", solidHeader = TRUE, status = "primary", width = 12, plotOutput("lineChartAQI"))
+              )
+      ),
       tabItem("about",
               a("Find out more about this project on the official website", href="")
       )
@@ -133,14 +152,16 @@ ui <- dashboardPage(
 )
 server <- function(input, output, session) 
 {
-      
   # Once a state is selected update the the county selectize input to match the counties inside the state
   observeEvent( input$State,
       updateSelectizeInput(session, "County", "County", 
                          choices = (listOfCounties$County[listOfCounties$State==input$State]), server = TRUE))
   
   ###################################################################################################################################
-  # Return the AQI status for the users slection
+  filteredData <- reactive({subset(dailyData, (State  ==  input$State)
+                                         &    (County ==  input$County)
+                                         &    (Year   ==  input$Year))})
+  # Return the AQI status for the users selection
   AQIstatus <- reactive({ data <- filter(dailyData, (State  ==  input$State)
                                                &    (County ==  input$County)
                                                &    (Year   ==  input$Year))
@@ -157,7 +178,7 @@ server <- function(input, output, session)
   data <- data %>% mutate(Percent = percent(Days / sum(Days)))
   })
   ###################################################################################################################################
-  # Return the AQI values for the users slection
+  # Return the AQI values for the users selection
   
   #PART B FOR PROJECT 1 MATERIAL FIND MAX, still under construction.
   AQIvalue <- reactive({ 
@@ -435,6 +456,12 @@ server <- function(input, output, session)
     )
   )
   
+  output$lineChartAQI <- renderPlot({
+    lineData <- filteredData()
+    ggplot() +
+      geom_point(data=lineData, aes(x=Date, y=AQI, fill=Parameter), size=4, shape=21) +
+      geom_line(data=lineData, aes(x=Date, y=AQI))
+  })
   
   
 }
