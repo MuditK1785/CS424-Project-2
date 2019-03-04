@@ -152,6 +152,12 @@ ui <- dashboardPage(
       tabItem("3BP",
               fluidRow(
                 box( title = "Daily AQI Data Line Chart with Leading Pollutant", solidHeader = TRUE, status = "primary", width = 12, plotOutput("lineChartAQI"))
+              ),
+              
+              fluidRow(
+                box( title = "Daily Air Quality Data Bar Chart by Month", solidHeader = TRUE, status = "primary", width = 6, plotOutput("barChartMonthlyAir")),
+                
+                box( title = "Daily Air Quality Data Table by Month", solidHeader = TRUE, status = "primary", width = 6, plotOutput("tableMonthlyAir"))
               )
       ),
       tabItem("map",
@@ -803,7 +809,22 @@ server <- function(input, output, session)
     map
   })
   
+  # Output daily AQI pollutant bar chart
+  output$barChartMonthlyAir <- renderPlot({
+    aqistuff <- AQIstatus()
+    barplot(as.matrix(aqistuff[2])) 
+  })
   
+  # Output daily AQI pollutant table
+  output$tableMonthlyAir <- DT::renderDataTable(
+    DT::datatable(
+      {    
+        aqistuff <- AQIstatus()
+        aqistuff[2]},
+      options = list(searching = FALSE, pageLength = 7, lengthChange = FALSE, order = list(list(1, 'asc'))
+      ) 
+    )
+  )
 }
 
 # Run the application 
