@@ -23,7 +23,6 @@ library(leaflet)
 library(scales)
 library(ggrepel)
 library(tidyverse)
-library(reshape)
 library(reshape2)
 
 # Read in the 2 pre-processed feather files
