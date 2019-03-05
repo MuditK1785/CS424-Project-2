@@ -162,7 +162,7 @@ ui <- dashboardPage(
       ),
       tabItem("map",
               fluidRow(
-                
+                box(title = "Location", solidHeader = TRUE, status = "primary", width = 12, leafletOutput("map", height = 300))
               )
       ),
       tabItem("about",
@@ -825,6 +825,16 @@ server <- function(input, output, session)
       ) 
     )
   )
+  
+  # map to show the location of the selected area
+  output$map <- renderLeaflet({
+    map <- leaflet()
+    map <- addTiles(map)
+    map_data <- map_values()
+    map <- setView(map, lng = map_data[1, 2], lat = map_data[1, 1], zoom = 9)
+    map <- addMarkers(map, lng = map_data[1, 2], lat = map_data[1, 1], popup = "Here")
+    map
+  })
 }
 
 # Run the application 
