@@ -23,6 +23,7 @@ library(leaflet)
 library(scales)
 library(ggrepel)
 library(tidyverse)
+library(reshape)
 library(reshape2)
 
 # Read in the 2 pre-processed feather files
@@ -141,15 +142,19 @@ ui <- dashboardPage(
       ),
       tabItem("3BP",
               fluidRow(
-                box( title = "Daily AQI Data Line Chart with Leading Pollutant", solidHeader = TRUE, status = "primary", width = 12, plotOutput("lineChartAQI"))
-              )
-      ),
+                box( title = "Daily AQI Data Line Chart with Leading Pollutant", solidHeader = TRUE, status = "primary", width = 12, plotOutput("lineChartAQI")),
+                
+                box( title = "Stacked Bar Chart - AQI", solidHeader = TRUE, status = "primary", width = 6, plotOutput("stackedBarChartAQI")),
+                box( title = "Monthly AQI of Year", solidHeader = TRUE, status = "primary", width = 6, dataTableOutput("tableMonthlyAQI"))
+      )),
+      
       tabItem("about",
               a("Find out more about this project on the official website", href="")
       )
     )
   )
 )
+
 server <- function(input, output, session) 
 {
   # Once a state is selected update the the county selectize input to match the counties inside the state
@@ -165,7 +170,6 @@ server <- function(input, output, session)
   AQIstatus <- reactive({ data <- filter(dailyData, (State  ==  input$State)
                                                &    (County ==  input$County)
                                                &    (Year   ==  input$Year))
-                          
   # For the returned data frame only keep the column that we need in this case the "Category"
   data <- data[c(5)]
                           
@@ -336,7 +340,7 @@ server <- function(input, output, session)
   
   # From the Days column create a percentage column
   data <- data %>% mutate(Percent = percent(Days / sum(Days)))
-  }) 
+  })
   ###################################################################################################################################
   # Output all of the Pollutant pie charts
   output$pieChartCO <- renderPlot({
@@ -463,9 +467,79 @@ server <- function(input, output, session)
       geom_line(data=lineData, aes(x=Date, y=AQI))
   })
   
+  output$stackedBarChartAQI <- renderPlot({
+    stackedBarData <- filteredData()
+    ggplot() + geom_bar(aes(y = AQI, x = fct_inorder(months.Date(Date)), fill = Category), data = stackedBarData,
+                        stat="identity")
+  })
   
-}
-  
-# Run the application 
+  output$tableMonthlyAQI <- DT::renderDataTable(
+    DT::datatable(
+      {monthDataAQI <- group_by(monthsData, month(Date))
+      janData <- subset(monthDataAQI, month(Date) == 1)
+      janVec <- janData[, "Category"]
+      janFrame <- as.data.frame(table(janVec))
+      cast(janFrame, Freq ~ janVec)
+      
+      febData <- subset(monthDataAQI, month(Date) == 2)
+      febVec <- febData[, "Category"]
+      febFrame <- as.data.frame(table(febVec))
+      cast(febFrame, Freq ~ febVec)
+      
+      marchData <- subset(monthDataAQI, month(Date) == 3)
+      marchVec <- marchData[, "Category"]
+      marchFrame <- as.data.frame(table(marchVec))
+      cast(marchFrame, Freq ~ marchVec)
+      
+      aprilData <- subset(monthDataAQI, month(Date) == 4)
+      aprilVec <- aprilData[, "Category"]
+      aprilFrame <- as.data.frame(table(aprilVec))
+      cast(aprilFrame, Freq ~ aprilVec)
+      
+      mayData <- subset(monthDataAQI, month(Date) == 5)
+      mayVec <- mayData[, "Category"]
+      mayFrame <- as.data.frame(table(mayVec))
+      cast(mayFrame, Freq ~ mayVec)
+      
+      juneData <- subset(monthDataAQI, month(Date) == 6)
+      juneVec <- juneData[, "Category"]
+      juneFrame <- as.data.frame(table(juneVec))
+      cast(juneFrame, Freq ~ juneVec)
+      
+      julyData <- subset(monthDataAQI, month(Date) == 7)
+      julyVec <- julyData[, "Category"]
+      julyFrame <- as.data.frame(table(julyVec))
+      cast(julyFrame, Freq ~ julyVec)
+      
+      augData <- subset(monthDataAQI, month(Date) == 8)
+      augVec <- augData[, "Category"]
+      augFrame <- as.data.frame(table(augVec))
+      cast(augFrame, Freq ~ augVec)
+      
+      septData <- subset(monthDataAQI, month(Date) == 9)
+      septVec <- septData[, "Category"]
+      septFrame <- as.data.frame(table(septVec))
+      cast(septFrame, Freq ~ septVec)
+      
+      octData <- subset(monthDataAQI, month(Date) == 10)
+      octVec <- octData[, "Category"]
+      octFrame <- as.data.frame(table(octVec))
+      cast(octFrame, Freq ~ octVec)
+      
+      novData <- subset(monthDataAQI, month(Date) == 11)
+      novVec <- novData[, "Category"]
+      novFrame <- as.data.frame(table(novVec))
+      cast(novFrame, Freq ~ novVec)
+      
+      decData <- subset(monthDataAQI, month(Date) == 12)
+      decVec <- decData[, "Category"]
+      decFrame <- as.data.frame(table(decVec))
+      cast(decFrame, Freq ~ decVec)
+      
+      do.call(rbind, list(janFrame = janFrame, febFrame = febFrame, marchFrame = marchFrame, aprilFrame = aprilFrame, mayFrame = mayFrame, juneFrame = juneFrame, julyFrame = julyFrame, augFrame = augFrame, septFrame = septFrame, novFrame = novFrame, decFrame = decFrame))
+      })
+    )}
+
+  # Run the application 
 shinyApp(ui = ui, server = server)
 
