@@ -27,11 +27,16 @@ library(tidyverse)
 library(reshape2)
 
 # Read in the 2 pre-processed feather files
-dailyData  <- read_fst('dailyData.fst')
-#hourlyData <- read_fst('hourlyData.fst')
+dailyData  <- read_fst('dailyData.fst') # Contains only 12 required counties
+#hourlyData <- read_fst('hourlyData.fst') # Contains only 12 required counties
+#dailyDataAll <- read_fst('dailyDataAll.fst') # Contains all of the counties 
+#hourlyDataAll <- read_fst('hourlyDataAll.fst') # Contains all of the counties
 
-# Create a year frame for the daily data frame
+# Create a year, and month frame for the daily data frame
 dailyData$Year <- year(as.Date(dailyData$Date, format = "%Y-%m-%d"))
+dailyData$Month <- month(as.Date(dailyData$Date, format = "%Y-%m-%d"))
+# Create a year frame for the daily data all frame
+#dailyDataAll$Year <- year(as.Date(dailyDataAll$Date, format = "%Y-%m-%d"))
 
 # Get list of counites and rename the columns
 listOfCounties <- dailyData[c(1,2)]
@@ -87,17 +92,11 @@ ui <- dashboardPage(
                 menuItem("Part C 4th Bullet Point", tabName = "map"), # Displays the map for top 100 counties of AQI or a pollutant type
                 menuItem("About", tabName = "about"), # Find more about this project.
                 
-                conditionalPanel("input.sidebarmenu === 'P1A' || input.sidebarmenu === '3BP'",
+                conditionalPanel("input.sidebarmenu === 'P1A' || input.sidebarmenu === '3BP' ",
                                  selectizeInput("State", "Select State", choices = unique(listOfCounties$State), selected = "Illinois"),
                                  selectizeInput("County", "Select County", choices = unique(listOfCounties$County), selected = "Cook"),
-                                 
                                  # Set up the year select input
                                  selectizeInput("Year", "Select the Year to See Data For", choices = unique(listOfYears$Year), selected = "2018")
-                ),
-                
-                conditionalPanel("input.sidebarmenu === 'P1B'",
-                                 selectizeInput("State", "Select State", choices = unique(listOfCounties$State), selected = "Illinois"),
-                                 selectizeInput("County", "Select County", choices = unique(listOfCounties$County), selected = "Cook")
                 ),
                 conditionalPanel("input.sidebarmenu === 'map'",
                                  # Set up the year select input
@@ -170,14 +169,15 @@ ui <- dashboardPage(
 server <- function(input, output, session) 
 {
   # Once a state is selected update the the county selectize input to match the counties inside the state
-  observeEvent( input$State,
+  observeEvent(input$State,
                 updateSelectizeInput(session, "County", "County", 
                                      choices = (listOfCounties$County[listOfCounties$State==input$State]), server = TRUE))
-  
+
   ###################################################################################################################################
   filteredData <- reactive({subset(dailyData, (State  ==  input$State)
-                                   &    (County ==  input$County)
-                                   &    (Year   ==  input$Year))})
+                                         &    (County ==  input$County)
+                                         &    (Year   ==  input$Year))})
+  ###################################################################################################################################
   # Return the AQI status for the users selection
   AQIstatus <- reactive({ data <- filter(dailyData, (State  ==  input$State)
                                          &    (County ==  input$County)
@@ -377,6 +377,165 @@ server <- function(input, output, session)
     
     data <- rbind(maxData,minData,perData)
     })
+  ###################################################################################################################################
+  MonthlyAQI <- reactive({
+     data <- filter(dailyData, (State == input$State) & (County == input$County) & (Year == input$Year))
+     #data <- filter(dailyData, (State == "Illinois") & (County == "Cook") & (Year == 2018))
+     month1 <- data[data$Month == 1,]
+     month2 <- data[data$Month == 2,]
+     month3 <- data[data$Month == 3,]
+     month4 <- data[data$Month == 4,]
+     month5 <- data[data$Month == 5,]
+     month6 <- data[data$Month == 6,]
+     month7 <- data[data$Month == 7,]
+     month8 <- data[data$Month == 8,]
+     month9 <- data[data$Month == 9,]
+     month10 <- data[data$Month == 10,]
+     month11 <- data[data$Month == 11,]
+     month12 <- data[data$Month == 12,]
+     
+     # For the returned data frame only keep the column that we need in this case the "Category"
+     month1 <- month1[c(5)]
+     month2 <- month2[c(5)]
+     month3 <- month3[c(5)]
+     month4 <- month4[c(5)]
+     month5 <- month5[c(5)]
+     month6 <- month6[c(5)]
+     month7 <- month7[c(5)]
+     month8 <- month8[c(5)]
+     month9 <- month9[c(5)]
+     month10 <- month10[c(5)]
+     month11 <- month11[c(5)]
+     month12 <- month12[c(5)]
+     
+     
+     # Update the data frame with the number of days for each Category
+     if(nrow(merge(1,month1))>0){ 
+     month1 <- data.frame("AQI" = c("Good", "Moderate", "Unhealthy for Sensitive", "Unhealthy", "Very Unhealthy", "Hazardous"),
+                        "Days"= c(length(which(month1 == "Good")), length(which(month1 == "Moderate")), length(which(month1 == "Unhealthy for Sensitive Groups")), 
+                                  length(which(month1 == "Unhealthy")), length(which(month1 == "Very Unhealthy")), length(which(month1 == "Hazardous"))))
+     month1$Month = "Jan"
+     unknown <- data.frame("AQI" = c("Unknown"), "Days" = c(31 - sum(month1$Days)), "Month" = c("Jan"))
+     month1 <- rbind(month1, unknown)
+     }else{month1 <- data.frame("AQI" = c("Good", "Moderate", "Unhealthy for Sensitive", "Unhealthy", "Very Unhealthy", "Hazardous", "Unknown"),
+                                "Days"= c(0, 0, 0, 0, 0, 0, 31)) 
+                                month1$Month = "Jan"}
+     if(nrow(merge(1,month2))>0){ 
+     month2 <- data.frame("AQI" = c("Good", "Moderate", "Unhealthy for Sensitive", "Unhealthy", "Very Unhealthy", "Hazardous"),
+                          "Days"= c(length(which(month2 == "Good")), length(which(month2 == "Moderate")), length(which(month2 == "Unhealthy for Sensitive Groups")), 
+                                    length(which(month2 == "Unhealthy")), length(which(month2 == "Very Unhealthy")), length(which(month2 == "Hazardous"))))
+     month2$Month = "Feb"
+     unknown <- data.frame("AQI" = c("Unknown"), "Days" = c(28 - sum(month2$Days)), "Month" = c("Feb"))
+     month2 <- rbind(month2, unknown)
+     }else{month2 <- data.frame("AQI" = c("Good", "Moderate", "Unhealthy for Sensitive", "Unhealthy", "Very Unhealthy", "Hazardous", "Unknown"),
+                                "Days"= c(0, 0, 0, 0, 0, 0, 28)) 
+                                month2$Month = "Feb"}
+     if(nrow(merge(1,month3))>0){ 
+     month3 <- data.frame("AQI" = c("Good", "Moderate", "Unhealthy for Sensitive", "Unhealthy", "Very Unhealthy", "Hazardous"),
+                          "Days"= c(length(which(month3 == "Good")), length(which(month3 == "Moderate")), length(which(month3 == "Unhealthy for Sensitive Groups")), 
+                                    length(which(month3 == "Unhealthy")), length(which(month3 == "Very Unhealthy")), length(which(month3 == "Hazardous"))))
+     month3$Month = "Mar"
+     unknown <- data.frame("AQI" = c("Unknown"), "Days" = c(31 - sum(month3$Days)), "Month" = c("Mar"))
+     month3 <- rbind(month3, unknown)
+     }else{month3 <- data.frame("AQI" = c("Good", "Moderate", "Unhealthy for Sensitive", "Unhealthy", "Very Unhealthy", "Hazardous", "Unknown"),
+                                "Days"= c(0, 0, 0, 0, 0, 0, 31)) 
+                                month3$Month = "Mar"}
+     if(nrow(merge(1,month4))>0){ 
+     month4 <- data.frame("AQI" = c("Good", "Moderate", "Unhealthy for Sensitive", "Unhealthy", "Very Unhealthy", "Hazardous"),
+                          "Days"= c(length(which(month4 == "Good")), length(which(month4 == "Moderate")), length(which(month4 == "Unhealthy for Sensitive Groups")), 
+                                    length(which(month4 == "Unhealthy")), length(which(month4 == "Very Unhealthy")), length(which(month4 == "Hazardous"))))
+     month4$Month = "Apr"
+     unknown <- data.frame("AQI" = c("Unknown"), "Days" = c(30 - sum(month4$Days)), "Month" = c("Apr"))
+     month4 <- rbind(month4, unknown)
+     }else{month4 <- data.frame("AQI" = c("Good", "Moderate", "Unhealthy for Sensitive", "Unhealthy", "Very Unhealthy", "Hazardous", "Unknown"),
+                                "Days"= c(0, 0, 0, 0, 0, 0, 30)) 
+                                month4$Month = "Apr"}
+     if(nrow(merge(1,month5))>0){ 
+     month5 <- data.frame("AQI" = c("Good", "Moderate", "Unhealthy for Sensitive", "Unhealthy", "Very Unhealthy", "Hazardous"),
+                          "Days"= c(length(which(month5 == "Good")), length(which(month5 == "Moderate")), length(which(month5 == "Unhealthy for Sensitive Groups")), 
+                                    length(which(month5 == "Unhealthy")), length(which(month5 == "Very Unhealthy")), length(which(month5 == "Hazardous"))))
+     month5$Month = "May"
+     unknown <- data.frame("AQI" = c("Unknown"), "Days" = c(31 - sum(month4$Days)), "Month" = c("May"))
+     month5 <- rbind(month5, unknown)
+     }else{month5 <- data.frame("AQI" = c("Good", "Moderate", "Unhealthy for Sensitive", "Unhealthy", "Very Unhealthy", "Hazardous", "Unknown"),
+                                "Days"= c(0, 0, 0, 0, 0, 0, 31)) 
+                                month5$Month = "May"}
+     if(nrow(merge(1,month6))>0){ 
+     month6 <- data.frame("AQI" = c("Good", "Moderate", "Unhealthy for Sensitive", "Unhealthy", "Very Unhealthy", "Hazardous"),
+                          "Days"= c(length(which(month6 == "Good")), length(which(month6 == "Moderate")), length(which(month6 == "Unhealthy for Sensitive Groups")), 
+                                    length(which(month6 == "Unhealthy")), length(which(month6 == "Very Unhealthy")), length(which(month6 == "Hazardous"))))
+     month6$Month = "Jun"
+     unknown <- data.frame("AQI" = c("Unknown"), "Days" = c(30 - sum(month4$Days)), "Month" = c("Jun"))
+     month6 <- rbind(month6, unknown)
+     }else{month6 <- data.frame("AQI" = c("Good", "Moderate", "Unhealthy for Sensitive", "Unhealthy", "Very Unhealthy", "Hazardous", "Unknown"),
+                                "Days"= c(0, 0, 0, 0, 0, 0, 30)) 
+                                month6$Month = "Jun"}
+     if(nrow(merge(1,month7))>0){ 
+     month7 <- data.frame("AQI" = c("Good", "Moderate", "Unhealthy for Sensitive", "Unhealthy", "Very Unhealthy", "Hazardous"),
+                          "Days"= c(length(which(month7 == "Good")), length(which(month7 == "Moderate")), length(which(month7 == "Unhealthy for Sensitive Groups")), 
+                                    length(which(month7 == "Unhealthy")), length(which(month7 == "Very Unhealthy")), length(which(month7 == "Hazardous"))))
+     month7$Month = "Jul"
+     unknown <- data.frame("AQI" = c("Unknown"), "Days" = c(31 - sum(month7$Days)), "Month" = c("Jul"))
+     month7 <- rbind(month7, unknown)
+     }else{month7 <- data.frame("AQI" = c("Good", "Moderate", "Unhealthy for Sensitive", "Unhealthy", "Very Unhealthy", "Hazardous", "Unknown"),
+                                "Days"= c(0, 0, 0, 0, 0, 0, 31)) 
+                                month7$Month = "Jul"}
+     if(nrow(merge(1,month8))>0){ 
+     month8 <- data.frame("AQI" = c("Good", "Moderate", "Unhealthy for Sensitive", "Unhealthy", "Very Unhealthy", "Hazardous"),
+                          "Days"= c(length(which(month8 == "Good")), length(which(month8 == "Moderate")), length(which(month8 == "Unhealthy for Sensitive Groups")), 
+                                    length(which(month8 == "Unhealthy")), length(which(month8 == "Very Unhealthy")), length(which(month8 == "Hazardous"))))
+     month8$Month = "Aug"
+     unknown <- data.frame("AQI" = c("Unknown"), "Days" = c(31 - sum(month8$Days)), "Month" = c("Aug"))
+     month8 <- rbind(month8, unknown)
+     }else{month8 <- data.frame("AQI" = c("Good", "Moderate", "Unhealthy for Sensitive", "Unhealthy", "Very Unhealthy", "Hazardous", "Unknown"),
+                                "Days"= c(0, 0, 0, 0, 0, 0, 31)) 
+                                month8$Month = "Aug"}
+     if(nrow(merge(1,month9))>0){ 
+     month9 <- data.frame("AQI" = c("Good", "Moderate", "Unhealthy for Sensitive", "Unhealthy", "Very Unhealthy", "Hazardous"),
+                          "Days"= c(length(which(month9 == "Good")), length(which(month9 == "Moderate")), length(which(month9 == "Unhealthy for Sensitive Groups")), 
+                                    length(which(month9 == "Unhealthy")), length(which(month9 == "Very Unhealthy")), length(which(month9 == "Hazardous"))))
+     month9$Month = "Sep"
+     unknown <- data.frame("AQI" = c("Unknown"), "Days" = c(30 - sum(month9$Days)), "Month" = c("Sep"))
+     month9 <- rbind(month9, unknown)
+     }else{month9 <- data.frame("AQI" = c("Good", "Moderate", "Unhealthy for Sensitive", "Unhealthy", "Very Unhealthy", "Hazardous", "Unknown"),
+                                "Days"= c(0, 0, 0, 0, 0, 0, 30)) 
+                                month9$Month = "Sep"}
+     if(nrow(merge(1,month10))>0){ 
+     month10 <- data.frame("AQI" = c("Good", "Moderate", "Unhealthy for Sensitive", "Unhealthy", "Very Unhealthy", "Hazardous"),
+                          "Days"= c(length(which(month10 == "Good")), length(which(month10 == "Moderate")), length(which(month10 == "Unhealthy for Sensitive Groups")), 
+                                    length(which(month10 == "Unhealthy")), length(which(month10 == "Very Unhealthy")), length(which(month10 == "Hazardous"))))
+     month10$Month = "Oct"
+     unknown <- data.frame("AQI" = c("Unknown"), "Days" = c(31 - sum(month10$Days)), "Month" = c("Oct"))
+     month10 <- rbind(month10, unknown)
+     }else{month10 <- data.frame("AQI" = c("Good", "Moderate", "Unhealthy for Sensitive", "Unhealthy", "Very Unhealthy", "Hazardous", "Unknown"),
+                                "Days"= c(0, 0, 0, 0, 0, 0, 31)) 
+                                month10$Month = "Oct"}
+     if(nrow(merge(1,month11))>0){ 
+       month11 <- data.frame("AQI" = c("Good", "Moderate", "Unhealthy for Sensitive", "Unhealthy", "Very Unhealthy", "Hazardous"),
+                             "Days"= c(length(which(month11 == "Good")), length(which(month11 == "Moderate")), length(which(month11 == "Unhealthy for Sensitive Groups")), 
+                                       length(which(month11 == "Unhealthy")), length(which(month11 == "Very Unhealthy")), length(which(month11 == "Hazardous"))))
+       month11$Month = "Nov"
+       unknown <- data.frame("AQI" = c("Unknown"), "Days" = c(30 - sum(month11$Days)), "Month" = c("Nov"))
+       month11 <- rbind(month11, unknown)
+     }else{month11 <- data.frame("AQI" = c("Good", "Moderate", "Unhealthy for Sensitive", "Unhealthy", "Very Unhealthy", "Hazardous", "Unknown"),
+                                 "Days"= c(0, 0, 0, 0, 0, 0, 30)) 
+                                  month11$Month = "Nov"}
+     
+     if(nrow(merge(1,month12))>0){
+     month12 <- data.frame("AQI" = c("Good", "Moderate", "Unhealthy for Sensitive", "Unhealthy", "Very Unhealthy", "Hazardous"),
+                          "Days"= c(length(which(month12 == "Good")), length(which(month12 == "Moderate")), length(which(month12 == "Unhealthy for Sensitive Groups")), 
+                                   length(which(month12 == "Unhealthy")), length(which(month12 == "Very Unhealthy")), length(which(month12 == "Hazardous"))))
+     month12$Month = "Dec"
+     unknown <- data.frame("AQI" = c("Unknown"), "Days" = c(31 - sum(month12$Days)), "Month" = c("Dec"))
+     month12 <- rbind(month12, unknown)
+     }else{month12 <- data.frame("AQI" = c("Good", "Moderate", "Unhealthy for Sensitive", "Unhealthy", "Very Unhealthy", "Hazardous", "Unknown"),
+                                 "Days"= c(0, 0, 0, 0, 0, 0, 31)) 
+                                  month12$Month = "Dec"}
+     
+     data <- rbind(month1, month2, month3, month4, month5, month6, month7,
+                   month8, month9, month10, month11, month12)
+     
+  })
   ###################################################################################################################################
   # Line graph data for the POLLUTANT percentages through out 1990-2018
   ParameterPercent <- reactive({ 
@@ -806,78 +965,18 @@ server <- function(input, output, session)
   })
   
   output$stackedBarChartAQI <- renderPlot({
-    stackedBarData <- filteredData()
-    ggplot() + geom_bar(aes(y = AQI, x = fct_inorder(months.Date(Date)), fill = Category), data = stackedBarData,
+    stackedBarData <- MonthlyAQI()
+    ggplot() + geom_bar(aes(y = Days, x = Month, fill = AQI), data = stackedBarData,
                         stat="identity")
   })
   
+  # Output dynamic AQI percent table
   output$tableMonthlyAQI <- DT::renderDataTable(
     DT::datatable(
-      {monthDataAQI <- group_by(monthsData, month(Date))
-      janData <- subset(monthDataAQI, month(Date) == 1)
-      janVec <- janData[, "Category"]
-      janFrame <- as.data.frame(table(janVec))
-      cast(janFrame, Freq ~ janVec)
-      
-      febData <- subset(monthDataAQI, month(Date) == 2)
-      febVec <- febData[, "Category"]
-      febFrame <- as.data.frame(table(febVec))
-      cast(febFrame, Freq ~ febVec)
-      
-      marchData <- subset(monthDataAQI, month(Date) == 3)
-      marchVec <- marchData[, "Category"]
-      marchFrame <- as.data.frame(table(marchVec))
-      cast(marchFrame, Freq ~ marchVec)
-      
-      aprilData <- subset(monthDataAQI, month(Date) == 4)
-      aprilVec <- aprilData[, "Category"]
-      aprilFrame <- as.data.frame(table(aprilVec))
-      cast(aprilFrame, Freq ~ aprilVec)
-      
-      mayData <- subset(monthDataAQI, month(Date) == 5)
-      mayVec <- mayData[, "Category"]
-      mayFrame <- as.data.frame(table(mayVec))
-      cast(mayFrame, Freq ~ mayVec)
-      
-      juneData <- subset(monthDataAQI, month(Date) == 6)
-      juneVec <- juneData[, "Category"]
-      juneFrame <- as.data.frame(table(juneVec))
-      cast(juneFrame, Freq ~ juneVec)
-      
-      julyData <- subset(monthDataAQI, month(Date) == 7)
-      julyVec <- julyData[, "Category"]
-      julyFrame <- as.data.frame(table(julyVec))
-      cast(julyFrame, Freq ~ julyVec)
-      
-      augData <- subset(monthDataAQI, month(Date) == 8)
-      augVec <- augData[, "Category"]
-      augFrame <- as.data.frame(table(augVec))
-      cast(augFrame, Freq ~ augVec)
-      
-      septData <- subset(monthDataAQI, month(Date) == 9)
-      septVec <- septData[, "Category"]
-      septFrame <- as.data.frame(table(septVec))
-      cast(septFrame, Freq ~ septVec)
-      
-      octData <- subset(monthDataAQI, month(Date) == 10)
-      octVec <- octData[, "Category"]
-      octFrame <- as.data.frame(table(octVec))
-      cast(octFrame, Freq ~ octVec)
-      
-      novData <- subset(monthDataAQI, month(Date) == 11)
-      novVec <- novData[, "Category"]
-      novFrame <- as.data.frame(table(novVec))
-      cast(novFrame, Freq ~ novVec)
-      
-      decData <- subset(monthDataAQI, month(Date) == 12)
-      decVec <- decData[, "Category"]
-      decFrame <- as.data.frame(table(decVec))
-      cast(decFrame, Freq ~ decVec)
-      
-      do.call(rbind, list(janFrame = janFrame, febFrame = febFrame, marchFrame = marchFrame, aprilFrame = aprilFrame, mayFrame = mayFrame, juneFrame = juneFrame, julyFrame = julyFrame, augFrame = augFrame, septFrame = septFrame, novFrame = novFrame, decFrame = decFrame))
-      })
-  )
-  
+      {MonthlyAQI()},
+      options = list(searching = FALSE, pageLength = 7, lengthChange = FALSE)
+      ) 
+    )
 }
 
 # Run the application 
